@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Dashboard PRO - 6 Columnas</title>
+    <style>
+        :root {
+            --bg-app: #f0f2f5;
+            --bg-panel: #ffffff;
+            --text-main: #1c1e21;
+            --shadow-card: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-hover: 0 10px 20px rgba(0,0,0,0.12);
+            --radius: 10px;
+            --font-stack: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            --accent: #2980b9;
+        }
+
+        [data-theme="dark"] {
+            --bg-app: #121212;
+            --bg-panel: #1e1e1e;
+            --text-main: #e4e6eb;
+            --shadow-card: 0 4px 6px rgba(0,0,0,0.3);
+            --shadow-hover: 0 10px 20px rgba(0,0,0,0.5);
+            --accent: #5dade2;
+        }
+
+        * { box-sizing: border-box; outline: none; }
+        
+        body {
+            margin: 0; padding: 0; height: 100vh;
+            font-family: var(--font-stack);
+            background-color: var(--bg-app);
+            color: var(--text-main);
+            transition: background-color 0.3s;
+            overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+
+        /* --- TOOLBAR --- */
+        .toolbar {
+            flex: 0 0 auto;
+            display: flex; gap: 15px; align-items: center;
+            padding: 10px 20px;
+            background: var(--bg-panel);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            z-index: 100;
+        }
+
+        .brand { font-weight: 800; font-size: 1rem; color: var(--text-main); text-transform: uppercase; }
+        .brand span { color: var(--accent); }
+
+        .search-box { flex: 1; position: relative; max-width: 400px; }
+        .search-box input {
+            width: 100%; padding: 10px 15px 10px 35px;
+            border-radius: 20px; border: 1px solid rgba(0,0,0,0.1);
+            background-color: var(--bg-app); color: var(--text-main);
+            font-size: 0.85rem; transition: 0.2s;
+        }
+        .search-box input:focus { border-color: var(--accent); background: var(--bg-panel); box-shadow: 0 0 0 3px rgba(41, 128, 185, 0.2); }
+        .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); opacity: 0.5; width: 14px; }
+        .search-tip { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.65rem; color: var(--accent); font-weight: bold; opacity: 0.6; pointer-events: none; }
+
+        .actions { display: flex; gap: 8px; margin-left: auto; }
+        .btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary.active { background: #e74c3c; }
+        .btn-icon { background: transparent; color: var(--text-main); padding: 8px; }
+        .btn-icon:hover { background: rgba(0,0,0,0.05); border-radius: 50%; }
+
+        /* --- GRID DE 6 COLUMNAS --- */
+        .dashboard-grid {
+            flex: 1; padding: 15px;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr); /* SEIS COLUMNAS POR LÍNEA */
+            grid-auto-rows: 1fr; /* Filas de igual altura */
+            gap: 10px;
+            overflow-y: auto;
+        }
+
+        .card {
+            position: relative; border-radius: var(--radius); padding: 10px 12px;
+            box-shadow: var(--shadow-card); cursor: pointer;
+            display: flex; flex-direction: column;
+            transition: all 0.2s ease;
+            user-select: none; overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.03);
+            min-height: 100px;
+        }
+
+        .card:hover:not(.editing) { transform: translateY(-3px); box-shadow: var(--shadow-hover); z-index: 5; }
+        .card:active:not(.editing) { transform: scale(0.96); }
+
+        .card-content { font-size: 0.72rem; line-height: 1.3; font-weight: 500; height: 100%; overflow: hidden; pointer-events: none; }
+        .card.dimmed { opacity: 0.15; transform: scale(0.95); filter: grayscale(1); }
+
+        .card.editing { cursor: text; border: 2px dashed #7f8c8d !important; background: #ffffff !important; color: #000 !important; }
+        .card.editing .card-content { pointer-events: auto; }
+        
+        .settings-btn { position: absolute; bottom: 5px; right: 5px; width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,0.8); display: none; align-items: center; justify-content: center; cursor: pointer; font-size: 11px; z-index: 10; }
+        .card.editing .settings-btn { display: flex; }
+
+        /* --- COLORES --- */
+        .c-blue   { background-color: #e3f2fd; color: #1565c0; }
+        .c-green  { background-color: #e8f5e9; color: #2e7d32; }
+        .c-purple { background-color: #f3e5f5; color: #6a1b9a; }
+        .c-orange { background-color: #fff3e0; color: #ef6c00; }
+        .c-red    { background-color: #ffebee; color: #c62828; }
+        .c-dark   { background-color: #37474f; color: #eceff1; }
+        .c-gray   { background-color: #ffffff; color: #455a64; }
+
+        [data-theme="dark"] .c-blue   { background-color: #154360; color: #d6eaf8; }
+        [data-theme="dark"] .c-green  { background-color: #145a32; color: #d5f5e3; }
+        [data-theme="dark"] .c-purple { background-color: #4a235a; color: #ebdef0; }
+        [data-theme="dark"] .c-orange { background-color: #873600; color: #fdebd0; }
+        [data-theme="dark"] .c-red    { background-color: #78281f; color: #fadbd8; }
+        [data-theme="dark"] .c-dark   { background-color: #263238; color: #b0bec5; }
+        [data-theme="dark"] .c-gray   { background-color: #1e1e1e; color: #b0b3b8; }
+
+        .ripple { position: absolute; border-radius: 50%; transform: scale(0); animation: ripple 0.5s linear; background-color: rgba(0, 0, 0, 0.1); pointer-events: none; }
+        @keyframes ripple { to { transform: scale(4); opacity: 0; } }
+
+        #colorMenu { display: none; position: fixed; z-index: 200; background: var(--bg-panel); padding: 10px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); border: 1px solid rgba(0,0,0,0.1); grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .swatch { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; transition: 0.2s; border: 1px solid rgba(0,0,0,0.05); }
+        .s-blue { background: #3498db; } .s-green { background: #27ae60; } .s-purple { background: #9b59b6; } .s-orange { background: #e67e22; } .s-red { background: #e74c3c; } .s-dark { background: #34495e; } .s-gray { background: #ecf0f1; }
+
+        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(50px); background: #2d3436; color: white; padding: 10px 20px; border-radius: 50px; font-weight: 500; font-size: 0.85rem; opacity: 0; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 300; display: flex; align-items: center; gap: 8px; }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+
+    <header class="toolbar">
+        <div class="brand">Control<span>PRO</span></div>
+        <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input type="text" id="searchInput" placeholder="Filtrar (Ctrl+F)..." oninput="filterCards()">
+            <span class="search-tip">Ctrl + F</span>
+        </div>
+        <div class="actions">
+            <button class="btn btn-icon" onclick="toggleTheme()" title="Modo Oscuro/Claro">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            </button>
+            <button class="btn btn-primary" id="editBtn" onclick="toggleEditMode()">
+                <span id="btnText">Bloqueado</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <div class="dashboard-grid" id="grid">
+        <div class="card c-blue" draggable="true" id="c01"><div class="card-content">Realiza seguimiento a su ticket. / Se verifica que aún está en proceso...</div></div>
+        <div class="card c-blue" draggable="true" id="c02"><div class="card-content">Solicita respuesta / Se verifica que ya figura como expirado...</div></div>
+        <div class="card c-orange" draggable="true" id="c03"><div class="card-content">Estado de solicitud XXXXXXXX...</div></div>
+        <div class="card c-purple" draggable="true" id="c04"><div class="card-content">Requiere atención de IT Services...</div></div>
+        <div class="card c-purple" draggable="true" id="c05"><div class="card-content">Se solicita evidencia del caso...</div></div>
+        <div class="card c-blue" draggable="true" id="c06"><div class="card-content">Ticket no expirado (V2)...</div></div>
+
+        <div class="card c-blue" draggable="true" id="c07"><div class="card-content">Ticket expirado (V2)...</div></div>
+        <div class="card c-dark" draggable="true" id="c08"><div class="card-content">Generar ticket CRM evaluación...</div></div>
+        <div class="card c-dark" draggable="true" id="c09"><div class="card-content">Derivar a Zendesk...</div></div>
+        <div class="card c-green" draggable="true" id="c10"><div class="card-content">Estimado, agradeceré revisar...</div></div>
+        <div class="card c-dark" draggable="true" id="c11"><div class="card-content">Opción SLA Excedido...</div></div>
+        <div class="card c-purple" draggable="true" id="c12"><div class="card-content">Tipifica: CRM Intermitente...</div></div>
+
+        <div class="card c-red" draggable="true" id="c13"><div class="card-content">No responde > Fin...</div></div>
+        <div class="card c-red" draggable="true" id="c14"><div class="card-content">No contesta > Fin...</div></div>
+        <div class="card c-red" draggable="true" id="c15"><div class="card-content">No contesta > Corta llamada...</div></div>
+        <div class="card c-red" draggable="true" id="c16"><div class="card-content">No Rellamada (Alta Demanda)</div></div>
+        <div class="card c-red" draggable="true" id="c17"><div class="card-content">No deriva - Sin Opción</div></div>
+        <div class="card c-red" draggable="true" id="c18"><div class="card-content">No deriva - Corta</div></div>
+
+        <div class="card c-red" draggable="true" id="c19"><div class="card-content">No deriva - Molesto</div></div>
+        <div class="card c-gray" draggable="true" id="c20"><div class="card-content">Casilla vacía...</div></div>
+        <div class="card c-gray" draggable="true" id="c21"><div class="card-content">Casilla vacía...</div></div>
+        <div class="card c-gray" draggable="true" id="c22"><div class="card-content">Casilla vacía...</div></div>
+        <div class="card c-gray" draggable="true" id="c23"><div class="card-content">Casilla vacía...</div></div>
+        <div class="card c-gray" draggable="true" id="c24"><div class="card-content">Casilla vacía...</div></div>
+    </div>
+
+    <div id="toast" class="toast"><span>Copiado</span></div>
+    <div id="overlay" style="display:none; position:fixed; inset:0; z-index:150;" onclick="closeColorMenu()"></div>
+    <div id="colorMenu">
+        <div class="swatch s-blue" onclick="setColor('c-blue')"></div>
+        <div class="swatch s-orange" onclick="setColor('c-orange')"></div>
+        <div class="swatch s-purple" onclick="setColor('c-purple')"></div>
+        <div class="swatch s-green" onclick="setColor('c-green')"></div>
+        <div class="swatch s-red" onclick="setColor('c-red')"></div>
+        <div class="swatch s-dark" onclick="setColor('c-dark')"></div>
+        <div class="swatch s-gray" onclick="setColor('c-gray')"></div>
+    </div>
+
+    <script>
+        let isEditing = false;
+        let activeCardId = null;
+        let dragSrcEl = null;
+        const colorClasses = ['c-blue', 'c-orange', 'c-purple', 'c-green', 'c-red', 'c-dark', 'c-gray'];
+
+        // ATAJO CTRL + F
+        window.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                const search = document.getElementById('searchInput');
+                search.focus(); search.select();
+            }
+            if (e.key === 'Escape' && document.activeElement.id === 'searchInput') {
+                document.getElementById('searchInput').value = '';
+                filterCards(); document.activeElement.blur();
+            }
+        });
+
+        window.onload = () => {
+            if(localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+
+            document.querySelectorAll('.card').forEach(card => {
+                const btn = document.createElement('div');
+                btn.className = 'settings-btn'; btn.innerHTML = '⚙️';
+                btn.onclick = (e) => { e.stopPropagation(); openColorMenu(e, card.id); };
+                card.appendChild(btn);
+
+                const txt = localStorage.getItem(card.id + '_txt');
+                const col = localStorage.getItem(card.id + '_col');
+                if(txt) card.querySelector('.card-content').innerText = txt;
+                if(col) { colorClasses.forEach(c => card.classList.remove(c)); card.classList.add(col); }
+
+                addDnDHandlers(card);
+                card.addEventListener('click', (e) => handleCardClick(e, card));
+            });
+        };
+
+        function handleCardClick(e, card) {
+            if(isEditing || e.target.closest('.settings-btn')) return;
+            const text = card.querySelector('.card-content').innerText;
+            if(text.trim()) {
+                navigator.clipboard.writeText(text).then(() => showToast("Copiado"));
+            }
+        }
+
+        function filterCards() {
+            const q = document.getElementById('searchInput').value.toLowerCase();
+            document.querySelectorAll('.card').forEach(c => {
+                const txt = c.querySelector('.card-content').innerText.toLowerCase();
+                c.classList.toggle('dimmed', !txt.includes(q));
+            });
+        }
+
+        function addDnDHandlers(card) {
+            card.addEventListener('dragstart', function(e) { if(isEditing) e.preventDefault(); dragSrcEl = this; this.style.opacity = '0.4'; });
+            card.addEventListener('dragover', (e) => e.preventDefault());
+            card.addEventListener('drop', function(e) {
+                if (dragSrcEl !== this) {
+                    const txtA = dragSrcEl.querySelector('.card-content').innerText;
+                    const colA = colorClasses.find(c => dragSrcEl.classList.contains(c));
+                    const txtB = this.querySelector('.card-content').innerText;
+                    const colB = colorClasses.find(c => this.classList.contains(c));
+                    dragSrcEl.querySelector('.card-content').innerText = txtB;
+                    dragSrcEl.classList.remove(...colorClasses); dragSrcEl.classList.add(colB);
+                    this.querySelector('.card-content').innerText = txtA;
+                    this.classList.remove(...colorClasses); this.classList.add(colA);
+                    saveCard(this); saveCard(dragSrcEl);
+                }
+            });
+            card.addEventListener('dragend', function() { this.style.opacity = '1'; });
+        }
+
+        function toggleEditMode() {
+            isEditing = !isEditing;
+            const btnText = document.getElementById('btnText');
+            const editBtn = document.getElementById('editBtn');
+            if(isEditing) {
+                btnText.innerText = "Editando..."; editBtn.classList.add('active');
+                document.querySelectorAll('.card').forEach(c => {
+                    c.classList.add('editing'); c.setAttribute('draggable', 'false');
+                    c.querySelector('.card-content').contentEditable = "true";
+                });
+            } else {
+                btnText.innerText = "Bloqueado"; editBtn.classList.remove('active');
+                document.querySelectorAll('.card').forEach(c => {
+                    c.classList.remove('editing'); c.setAttribute('draggable', 'true');
+                    c.querySelector('.card-content').contentEditable = "false";
+                    saveCard(c);
+                });
+                showToast("Guardado");
+            }
+        }
+
+        function saveCard(card) {
+            localStorage.setItem(card.id + '_txt', card.querySelector('.card-content').innerText);
+            localStorage.setItem(card.id + '_col', colorClasses.find(c => card.classList.contains(c)));
+        }
+
+        function openColorMenu(e, id) {
+            activeCardId = id; const menu = document.getElementById('colorMenu');
+            menu.style.display = 'grid'; menu.style.left = (e.clientX - 50) + 'px'; menu.style.top = (e.clientY - 100) + 'px';
+            document.getElementById('overlay').style.display = 'block';
+        }
+
+        function setColor(cls) {
+            const card = document.getElementById(activeCardId);
+            colorClasses.forEach(c => card.classList.remove(c));
+            card.classList.add(cls); closeColorMenu(); saveCard(card);
+        }
+
+        function closeColorMenu() { document.getElementById('colorMenu').style.display = 'none'; document.getElementById('overlay').style.display = 'none'; }
+        
+        function toggleTheme() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            localStorage.setItem('theme', isDark ? 'light' : 'dark');
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.querySelector('span').innerText = msg; t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 1500);
+        }
+    </script>
+</body>
+</html>
