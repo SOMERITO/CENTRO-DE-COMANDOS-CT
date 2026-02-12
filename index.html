@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Centro de Control - Manual V11</title>
+    <title>Centro de Control - Smart V12</title>
     <style>
         /* --- ESTILOS VISUALES --- */
         :root {
@@ -11,7 +11,7 @@
             --shadow-card: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.08);
             --shadow-hover: 0 12px 24px rgba(0,0,0,0.15);
             --radius: 12px; 
-            --accent: #2980b9; --font-stack: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            --accent: #2980b9; --warn: #e67e22; --font-stack: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
         }
 
         * { box-sizing: border-box; outline: none; }
@@ -24,11 +24,14 @@
         /* ANIMACIONES */
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes popIn { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
-        @keyframes modalIn { 
-            0% { opacity: 0; transform: scale(0.95) translateY(10px); } 
-            100% { opacity: 1; transform: scale(1) translateY(0); } 
+        @keyframes modalIn { 0% { opacity: 0; transform: scale(0.95) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+        
+        /* Animación de "Atención" para el botón de guardar */
+        @keyframes pulse-attention {
+            0% { box-shadow: 0 0 0 0 rgba(230, 126, 34, 0.7); transform: scale(1); }
+            70% { box-shadow: 0 0 0 10px rgba(230, 126, 34, 0); transform: scale(1.05); }
+            100% { box-shadow: 0 0 0 0 rgba(230, 126, 34, 0); transform: scale(1); }
         }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         /* BARRA SUPERIOR */
         .toolbar { 
@@ -60,15 +63,24 @@
         .status-led.online { background-color: #2ecc71; box-shadow: 0 0 6px #2ecc71; }
         .status-led.offline { background-color: #e74c3c; box-shadow: 0 0 6px #e74c3c; }
         .status-led.syncing { background-color: #f1c40f; }
-        .status-led.unsaved { background-color: #e67e22; box-shadow: 0 0 6px #e67e22; } /* Nuevo estado */
+        .status-led.unsaved { background-color: var(--warn); box-shadow: 0 0 6px var(--warn); } 
 
         /* BOTONES */
         .btn { padding: 9px 20px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; transition: all 0.2s; border: 1px solid transparent; }
         .btn:hover { transform: translateY(-1px); }
         .btn:active { transform: translateY(1px); }
         
+        /* Botón Nube - Estado Normal */
         .btn-cloud { background: linear-gradient(to bottom, #ffffff, #f8f9fa); color: #495057; border-color: #dce0e5; box-shadow: 0 2px 4px rgba(0,0,0,0.05); } 
         .btn-cloud:hover { background: linear-gradient(to bottom, #f8f9fa, #e9ecef); border-color: #cdd4da; }
+        
+        /* Botón Nube - Estado PENDIENTE (Alerta visual) */
+        .btn-cloud.pending {
+            background: linear-gradient(135deg, #f39c12, #d35400);
+            color: white;
+            border-color: #e67e22;
+            animation: pulse-attention 2s infinite; /* Pulsar para llamar la atención */
+        }
         
         .btn-primary { background: linear-gradient(135deg, var(--accent), #1f6391); color: white; box-shadow: 0 4px 10px rgba(41, 128, 185, 0.3); }
         .btn-primary:hover { background: linear-gradient(135deg, #3498db, #2980b9); }
@@ -81,7 +93,6 @@
         .card { position: relative; border-radius: var(--radius); padding: 15px; box-shadow: var(--shadow-card); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; user-select: none; overflow: hidden; border: 1px solid rgba(255,255,255,0.5); background: var(--bg-panel); opacity: 0; transform: translateY(20px); animation: fadeInUp 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
         .card:hover:not(.editing) { transform: translateY(-6px) scale(1.02); box-shadow: var(--shadow-hover); z-index: 10; }
         
-        /* Contenido con contraste automático */
         .card-content { font-size: 0.75rem; line-height: 1.4; font-weight: 600; color: inherit; height: 100%; pointer-events: none; white-space: pre-wrap; transition: opacity 0.3s; }
         .card.dimmed { opacity: 0.08; transform: scale(0.95); filter: grayscale(1) blur(1px); pointer-events: none; }
         
@@ -118,30 +129,15 @@
         .swatch { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(0,0,0,0.1); transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .swatch:hover { transform: scale(1.15); }
 
-        /* --- NUEVO: MODAL DE CONFIRMACIÓN --- */
-        .modal-overlay {
-            display: none; position: fixed; inset: 0; z-index: 1000;
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(5px);
-            align-items: center; justify-content: center;
-            animation: fadeIn 0.3s ease-out;
-        }
-        .modal-box {
-            background: white; padding: 30px; width: 400px; max-width: 90%;
-            border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.15);
-            text-align: center;
-            border: 1px solid rgba(0,0,0,0.05);
-            transform: scale(0.95); opacity: 0;
-            animation: modalIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
+        /* MODAL */
+        .modal-overlay { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(5px); align-items: center; justify-content: center; animation: fadeIn 0.3s ease-out; }
+        .modal-box { background: white; padding: 30px; width: 400px; max-width: 90%; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); text-align: center; border: 1px solid rgba(0,0,0,0.05); transform: scale(0.95); opacity: 0; animation: modalIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         .modal-icon { font-size: 3rem; margin-bottom: 15px; display: block; }
         .modal-title { font-size: 1.2rem; font-weight: 800; color: #2c3e50; margin: 0 0 10px 0; }
         .modal-desc { font-size: 0.9rem; color: #7f8c8d; margin-bottom: 25px; line-height: 1.5; }
         .modal-actions { display: flex; gap: 10px; justify-content: center; }
-        
         .btn-cancel { background: #f1f2f6; color: #636e72; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; }
         .btn-cancel:hover { background: #dfe4ea; }
-        
         .btn-confirm { background: #2980b9; color: white; border: none; padding: 10px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(41, 128, 185, 0.3); }
         .btn-confirm:hover { background: #21618c; transform: translateY(-2px); }
 
@@ -200,7 +196,7 @@
         <div class="modal-box">
             <span class="modal-icon">☁️</span>
             <h3 class="modal-title">¿Guardar cambios en la nube?</h3>
-            <p class="modal-desc">Se actualizará la información para todos tus dispositivos. Esta acción no se puede deshacer.</p>
+            <p class="modal-desc">Se actualizará la información. Si sales sin guardar, perderás los últimos cambios.</p>
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="closeSaveModal()">Cancelar</button>
                 <button class="btn-confirm" onclick="confirmSave()">Sí, Guardar</button>
@@ -246,36 +242,42 @@
         let hasUnsavedChanges = false;
         const colorClasses = ['c-blue', 'c-green', 'c-purple', 'c-orange', 'c-red', 'c-dark', 'c-gray', 'c-teal', 'c-pink', 'c-indigo', 'c-lime', 'c-amber', 'c-brown', 'c-lavender', 'c-purple-dark'];
 
+        // --- PROTECCIÓN DE SALIDA (EVITAR CERRAR SIN GUARDAR) ---
+        window.onbeforeunload = function() {
+            if (hasUnsavedChanges) {
+                return "Tienes cambios sin guardar. ¿Seguro que quieres salir?";
+            }
+        };
+
         // --- MANEJO DEL MODAL ---
-        function openSaveModal() {
-            document.getElementById('saveModal').style.display = 'flex';
-        }
-        function closeSaveModal() {
-            document.getElementById('saveModal').style.display = 'none';
-        }
-        function confirmSave() {
-            closeSaveModal();
-            syncToCloud(true);
-        }
+        function openSaveModal() { document.getElementById('saveModal').style.display = 'flex'; }
+        function closeSaveModal() { document.getElementById('saveModal').style.display = 'none'; }
+        function confirmSave() { closeSaveModal(); syncToCloud(true); }
 
         // --- STATUS ---
         function setStatus(state) {
             const led = document.getElementById('statusLed');
             const label = document.getElementById('statusLabel');
             led.className = 'status-led ' + state;
-            
             if (state === 'online') { label.innerText = 'Sincronizado'; label.style.color = '#2ecc71'; }
             else if (state === 'syncing') { label.innerText = 'Conectando...'; label.style.color = '#f1c40f'; }
             else if (state === 'offline') { label.innerText = 'Offline'; label.style.color = '#e74c3c'; }
             else if (state === 'unsaved') { label.innerText = 'Cambios sin guardar'; label.style.color = '#e67e22'; }
         }
 
-        // --- MARCAR COMO NO GUARDADO ---
+        // --- ALERTA VISUAL DE CAMBIOS (SUGERENCIA DE GUARDADO) ---
         function markUnsaved() {
             if(!hasUnsavedChanges) {
                 hasUnsavedChanges = true;
                 setStatus('unsaved');
-                document.getElementById('cloudText').innerText = "Guardar";
+                
+                // Activar animación y cambio de texto en botón nube
+                const btn = document.getElementById('cloudBtn');
+                const txt = document.getElementById('cloudText');
+                btn.classList.add('pending');
+                txt.innerText = "Guardar Cambios";
+                
+                showToast("⚠️ Tienes cambios pendientes");
             }
         }
 
@@ -286,61 +288,49 @@
                 const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
                     headers: { 'X-Master-Key': MASTER_KEY }
                 });
-                
                 let data = {};
                 if (response.ok) {
                     const result = await response.json();
                     data = result.record;
                 }
-
                 if (!data || Object.keys(data).length === 0) {
                     data = defaultData;
                     isDataLoaded = true;
-                    setTimeout(() => syncToCloud(true), 1000); // Guardado inicial automático solo si está vacío
+                    setTimeout(() => syncToCloud(true), 1000);
                 }
 
                 const grid = document.getElementById('grid');
                 grid.innerHTML = ''; 
-                
                 const totalCards = Math.max(24, Object.keys(data).length);
                 
                 for(let i=1; i<=totalCards; i++) {
                     const id = `c${i<10?'0'+i:i}`;
                     const cardData = data[id] || { txt: "...", col: "c-gray" };
-                    
                     const div = document.createElement('div');
                     div.className = `card ${cardData.col}`;
                     div.id = id;
                     div.draggable = true;
                     div.style.animationDelay = `${i * 0.02}s`;
-                    div.innerHTML = `
-                        <div class="card-content">${cardData.txt}</div>
-                        <div class="settings-btn" onclick="event.stopPropagation(); openColorMenu(event, '${id}')">⚙️</div>
-                    `;
-                    
+                    div.innerHTML = `<div class="card-content">${cardData.txt}</div><div class="settings-btn" onclick="event.stopPropagation(); openColorMenu(event, '${id}')">⚙️</div>`;
                     div.addEventListener('click', (e) => handleCardClick(e, div));
                     addDnDHandlers(div);
                     grid.appendChild(div);
                 }
-
                 isDataLoaded = true;
                 hasUnsavedChanges = false;
                 setStatus('online');
-
             } catch (err) { 
                 console.error(err);
                 setStatus('offline');
-                alert("Error de conexión. Se cargarán los datos locales de respaldo.");
+                alert("Error de conexión. Se cargarán los datos locales.");
                 isDataLoaded = true;
             }
         }
 
-        // --- GUARDADO MANUAL ---
+        // --- GUARDADO ---
         async function syncToCloud(force = false) {
             if (!isDataLoaded && !force) return;
-
             setStatus('syncing');
-            
             const data = {};
             document.querySelectorAll('.card').forEach(card => {
                 data[card.id] = {
@@ -348,7 +338,6 @@
                     col: colorClasses.find(c => card.classList.contains(c)) || 'c-gray'
                 };
             });
-
             try {
                 const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
                     method: 'PUT',
@@ -359,13 +348,17 @@
                     setTimeout(() => { 
                         setStatus('online'); 
                         hasUnsavedChanges = false;
+                        
+                        // Resetear botón de alerta
+                        const btn = document.getElementById('cloudBtn');
+                        const txt = document.getElementById('cloudText');
+                        btn.classList.remove('pending');
+                        txt.innerText = "Guardar";
+                        
                         showToast("✅ Información Guardada");
                     }, 500);
                 } else throw new Error();
-            } catch (err) { 
-                setStatus('offline');
-                showToast("❌ Error al guardar");
-            }
+            } catch (err) { setStatus('offline'); showToast("❌ Error al guardar"); }
         }
 
         function downloadBackup() {
@@ -384,7 +377,6 @@
             node.click();
             node.remove();
         }
-
         window.onload = loadFromCloud;
 
         function handleCardClick(e, card) {
@@ -399,7 +391,6 @@
             setTimeout(()=>circle.remove(), 600);
             navigator.clipboard.writeText(card.querySelector('.card-content').innerText).then(() => showToast("Copiado"));
         }
-
         function filterCards() {
             const q = document.getElementById('searchInput').value.toLowerCase();
             document.querySelectorAll('.card').forEach(c => {
@@ -407,17 +398,11 @@
                 c.classList.toggle('dimmed', q && !txt.includes(q));
             });
         }
-
         function toggleEditMode() {
             isEditing = !isEditing;
             const btnText = document.getElementById('btnText');
             const editBtn = document.getElementById('editBtn');
-            
-            if(!isEditing) {
-                // Al salir de edición, NO guardamos automáticamente, solo marcamos cambio
-                markUnsaved();
-            }
-
+            if(!isEditing) { markUnsaved(); } // Marcar como no guardado al salir de edición
             document.querySelectorAll('.card').forEach(c => {
                 c.classList.toggle('editing', isEditing);
                 c.setAttribute('draggable', !isEditing);
@@ -426,7 +411,6 @@
             btnText.innerText = isEditing ? "Editando..." : "Bloqueado";
             editBtn.classList.toggle('active', isEditing);
         }
-
         function openColorMenu(e, id) {
             activeCardId = id; const menu = document.getElementById('colorMenu');
             menu.style.display = 'grid'; 
@@ -441,7 +425,7 @@
             colorClasses.forEach(c => card.classList.remove(c));
             card.classList.add(cls); 
             closeColorMenu();
-            markUnsaved(); // Marcamos cambio sin guardar
+            markUnsaved(); 
         }
         function closeColorMenu() { document.getElementById('colorMenu').style.display = 'none'; document.getElementById('overlay').style.display = 'none'; }
         function showToast(msg) { const t = document.getElementById('toast'); t.querySelector('span') ? t.querySelector('span').innerText = msg : t.innerText = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
@@ -463,7 +447,7 @@
                         source.classList.remove(...colorClasses); source.classList.add(colB);
                         target.querySelector('.card-content').innerText = txtA;
                         target.classList.remove(...colorClasses); target.classList.add(colA);
-                        markUnsaved(); // Marcamos cambio sin guardar
+                        markUnsaved(); // SUGERIR GUARDADO
                     }, 200);
                     setTimeout(() => { source.classList.remove('swapping'); target.classList.remove('swapping'); }, 400);
                 }
@@ -471,7 +455,6 @@
             });
             card.addEventListener('dragend', function() { this.classList.remove('dragging'); document.querySelectorAll('.card').forEach(c => c.classList.remove('drag-target')); });
         }
-        
         window.addEventListener('keydown', (e) => { 
             if ((e.ctrlKey || e.metaKey) && e.key === 'f') { e.preventDefault(); document.getElementById('searchInput').focus(); }
             if (e.key === 'Escape') { document.getElementById('searchInput').value=''; filterCards(); }
