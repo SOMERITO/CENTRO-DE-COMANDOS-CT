@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Centro de Control - Final V10</title>
+    <title>Centro de Control - Manual V11</title>
     <style>
-        /* --- ESTILOS VISUALES PRO --- */
+        /* --- ESTILOS VISUALES --- */
         :root {
             --bg-app: #f0f2f5; --bg-panel: #ffffff; --text-main: #1c1e21;
             --shadow-card: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.08);
@@ -23,18 +23,12 @@
 
         /* ANIMACIONES */
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
         @keyframes popIn { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
-        @keyframes swapPulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(0.9); opacity: 0.7; }
-            100% { transform: scale(1); opacity: 1; }
+        @keyframes modalIn { 
+            0% { opacity: 0; transform: scale(0.95) translateY(10px); } 
+            100% { opacity: 1; transform: scale(1) translateY(0); } 
         }
-        @keyframes pulse-led {
-            0% { transform: scale(0.95); opacity: 0.7; box-shadow: 0 0 0 0 rgba(241, 196, 15, 0.7); }
-            70% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 6px rgba(241, 196, 15, 0); }
-            100% { transform: scale(0.95); opacity: 0.7; box-shadow: 0 0 0 0 rgba(241, 196, 15, 0); }
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         /* BARRA SUPERIOR */
         .toolbar { 
@@ -58,24 +52,24 @@
 
         .actions { display: flex; gap: 12px; margin-left: auto; align-items: center; }
         
-        /* LED STATUS & BOTONES */
+        /* LED STATUS */
         .status-container { display: flex; align-items: center; gap: 8px; margin-right: 5px; padding: 6px 12px; background: #f8f9fa; border-radius: 20px; border: 1px solid #e9ecef; }
         .status-led { width: 10px; height: 10px; border-radius: 50%; background-color: #ccc; transition: all 0.3s ease; }
         .status-text { font-size: 0.7rem; font-weight: 600; color: #7f8c8d; transition: color 0.3s; white-space: nowrap; }
 
         .status-led.online { background-color: #2ecc71; box-shadow: 0 0 6px #2ecc71; }
         .status-led.offline { background-color: #e74c3c; box-shadow: 0 0 6px #e74c3c; }
-        .status-led.syncing { background-color: #f1c40f; animation: pulse-led 1.5s infinite; }
+        .status-led.syncing { background-color: #f1c40f; }
+        .status-led.unsaved { background-color: #e67e22; box-shadow: 0 0 6px #e67e22; } /* Nuevo estado */
 
+        /* BOTONES */
         .btn { padding: 9px 20px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; transition: all 0.2s; border: 1px solid transparent; }
         .btn:hover { transform: translateY(-1px); }
         .btn:active { transform: translateY(1px); }
         
         .btn-cloud { background: linear-gradient(to bottom, #ffffff, #f8f9fa); color: #495057; border-color: #dce0e5; box-shadow: 0 2px 4px rgba(0,0,0,0.05); } 
         .btn-cloud:hover { background: linear-gradient(to bottom, #f8f9fa, #e9ecef); border-color: #cdd4da; }
-        .btn-cloud.saving { background: #fff3cd; color: #856404; border-color: #ffeeba; }
-        .cloud-icon.spinning { animation: spin 1s linear infinite; display: inline-block; }
-
+        
         .btn-primary { background: linear-gradient(135deg, var(--accent), #1f6391); color: white; box-shadow: 0 4px 10px rgba(41, 128, 185, 0.3); }
         .btn-primary:hover { background: linear-gradient(135deg, #3498db, #2980b9); }
         .btn-primary.active { background: linear-gradient(135deg, #e74c3c, #c0392b); }
@@ -85,23 +79,10 @@
         .dashboard-grid { flex: 1; padding: 20px; display: grid; grid-template-columns: repeat(6, 1fr); grid-auto-rows: minmax(110px, auto); gap: 15px; overflow-y: auto; padding-bottom: 40px; }
 
         .card { position: relative; border-radius: var(--radius); padding: 15px; box-shadow: var(--shadow-card); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; user-select: none; overflow: hidden; border: 1px solid rgba(255,255,255,0.5); background: var(--bg-panel); opacity: 0; transform: translateY(20px); animation: fadeInUp 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
-        
-        /* Retrasos de entrada */
-        .card:nth-child(1) { animation-delay: 0.05s; } .card:nth-child(2) { animation-delay: 0.07s; }
-        .card:nth-child(3) { animation-delay: 0.09s; } .card:nth-child(4) { animation-delay: 0.11s; }
-        .card:nth-child(5) { animation-delay: 0.13s; } .card:nth-child(6) { animation-delay: 0.15s; }
-        /* ... se aplica dinámicamente ... */
-
         .card:hover:not(.editing) { transform: translateY(-6px) scale(1.02); box-shadow: var(--shadow-hover); z-index: 10; }
-        .card.dragging { opacity: 0.4; transform: scale(0.9); border: 2px dashed #999; }
-        .card.drag-target { transform: scale(1.05); box-shadow: 0 0 0 3px var(--accent); z-index: 20; }
-        .card.swapping { animation: swapPulse 0.4s ease-in-out forwards; }
-
-        .card-content { 
-            font-size: 0.75rem; line-height: 1.4; font-weight: 600; 
-            color: inherit; /* CONTRASTE AUTOMÁTICO */
-            height: 100%; pointer-events: none; white-space: pre-wrap; transition: opacity 0.3s;
-        }
+        
+        /* Contenido con contraste automático */
+        .card-content { font-size: 0.75rem; line-height: 1.4; font-weight: 600; color: inherit; height: 100%; pointer-events: none; white-space: pre-wrap; transition: opacity 0.3s; }
         .card.dimmed { opacity: 0.08; transform: scale(0.95); filter: grayscale(1) blur(1px); pointer-events: none; }
         
         .card.editing { cursor: text; border: 2px dashed #bdc3c7 !important; background: #f9f9f9 !important; color: #000 !important; transform: none !important; }
@@ -110,7 +91,7 @@
         .settings-btn { position: absolute; bottom: 8px; right: 8px; cursor: pointer; display: none; background: white; border-radius: 50%; width: 24px; height: 24px; align-items: center; justify-content: center; font-size: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); color: #333; }
         .card.editing .settings-btn { display: flex; animation: popIn 0.3s; }
 
-        /* PALETA DE COLORES */
+        /* COLORES */
         .c-blue { background: linear-gradient(135deg, #e3f2fd, #bbdefb); color: #0d47a1; }
         .c-green { background: linear-gradient(135deg, #e8f5e9, #c8e6c9); color: #1b5e20; }
         .c-purple { background: linear-gradient(135deg, #f3e5f5, #e1bee7); color: #4a148c; }
@@ -124,8 +105,6 @@
         .c-amber { background: linear-gradient(135deg, #fff8e1, #ffecb3); color: #ff6f00; }
         .c-brown { background: linear-gradient(135deg, #efebe9, #d7ccc8); color: #4e342e; }
         .c-lavender { background: linear-gradient(135deg, #ede7f6, #d1c4e9); color: #512da8; }
-        
-        /* COLORES OSCUROS (Texto Blanco) */
         .c-dark { background: linear-gradient(135deg, #37474f, #212121); color: #ffffff !important; }
         .c-purple-dark { background: linear-gradient(135deg, #4a148c, #311b92); color: #ffffff !important; }
 
@@ -138,6 +117,34 @@
         #colorMenu { display: none; position: fixed; z-index: 200; background: var(--bg-panel); padding: 18px; border-radius: 16px; box-shadow: 0 15px 40px rgba(0,0,0,0.2); grid-template-columns: repeat(5, 1fr); gap: 12px; border: 1px solid rgba(0,0,0,0.05); animation: popIn 0.3s; }
         .swatch { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(0,0,0,0.1); transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .swatch:hover { transform: scale(1.15); }
+
+        /* --- NUEVO: MODAL DE CONFIRMACIÓN --- */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; z-index: 1000;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(5px);
+            align-items: center; justify-content: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+        .modal-box {
+            background: white; padding: 30px; width: 400px; max-width: 90%;
+            border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.05);
+            transform: scale(0.95); opacity: 0;
+            animation: modalIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        .modal-icon { font-size: 3rem; margin-bottom: 15px; display: block; }
+        .modal-title { font-size: 1.2rem; font-weight: 800; color: #2c3e50; margin: 0 0 10px 0; }
+        .modal-desc { font-size: 0.9rem; color: #7f8c8d; margin-bottom: 25px; line-height: 1.5; }
+        .modal-actions { display: flex; gap: 10px; justify-content: center; }
+        
+        .btn-cancel { background: #f1f2f6; color: #636e72; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-cancel:hover { background: #dfe4ea; }
+        
+        .btn-confirm { background: #2980b9; color: white; border: none; padding: 10px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(41, 128, 185, 0.3); }
+        .btn-confirm:hover { background: #21618c; transform: translateY(-2px); }
+
     </style>
 </head>
 <body>
@@ -145,7 +152,6 @@
     <header class="toolbar">
         <div class="brand">Control<span>PRO</span></div>
         <div class="search-box">
-            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
             <input type="text" id="searchInput" placeholder="Filtrar respuestas..." oninput="filterCards()">
             <span class="search-tip">Ctrl + F / ESC</span>
         </div>
@@ -156,22 +162,21 @@
             </div>
             
             <button class="btn btn-backup" onclick="downloadBackup()" title="Descargar copia de seguridad">💾</button>
-            <button class="btn btn-cloud" id="cloudBtn" onclick="syncToCloud(true)" title="Forzar Sincronización">
-                <span class="cloud-icon">☁️</span> <span id="cloudText">Nube OK</span>
+            
+            <button class="btn btn-cloud" id="cloudBtn" onclick="openSaveModal()" title="Guardar Cambios">
+                <span class="cloud-icon">☁️</span> <span id="cloudText">Guardar</span>
             </button>
+            
             <button class="btn btn-primary" id="editBtn" onclick="toggleEditMode()">
                 <span id="btnText">Bloqueado</span>
             </button>
         </div>
     </header>
 
-    <div class="dashboard-grid" id="grid">
-        </div>
+    <div class="dashboard-grid" id="grid"></div>
 
-    <div id="toast" class="toast">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" color="#2ecc71"><polyline points="20 6 9 17 4 12"></polyline></svg>
-        <span>Copiado</span>
-    </div>
+    <div id="toast" class="toast"><span>Notificación</span></div>
+    
     <div id="overlay" style="display:none; position:fixed; inset:0; z-index:150;" onclick="closeColorMenu()"></div>
     <div id="colorMenu">
         <div class="swatch" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb)" onclick="setColor('c-blue')"></div>
@@ -191,13 +196,22 @@
         <div class="swatch" style="background: linear-gradient(135deg, #ffffff, #f5f5f5)" onclick="setColor('c-gray')"></div>
     </div>
 
+    <div id="saveModal" class="modal-overlay">
+        <div class="modal-box">
+            <span class="modal-icon">☁️</span>
+            <h3 class="modal-title">¿Guardar cambios en la nube?</h3>
+            <p class="modal-desc">Se actualizará la información para todos tus dispositivos. Esta acción no se puede deshacer.</p>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeSaveModal()">Cancelar</button>
+                <button class="btn-confirm" onclick="confirmSave()">Sí, Guardar</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // --- CREDENCIALES INTEGRADAS ---
         const BIN_ID = '698dfdc1d0ea881f40b55397'; 
         const MASTER_KEY = '$2a$10$7PwFegDVLzoS8bJTQPdA7.27bk7D4odCTFnynWW1NkB5H6.PBt.nm';
 
-        // --- DATOS DE RESPALDO (TU EXCEL) ---
-        // Estos datos se usarán automáticamente si el BIN nuevo está vacío
         const defaultData = {
             "c01": { "txt": "Realiza seguimiento a su ticket. / Se verifica que el ticket aún se encuentra en proceso de evaluación por el área correspondiente. Se solicita la paciencia del caso mientras se obtiene una respuesta. Ticket aún no expirado:", "col": "c-blue" },
             "c02": { "txt": "Solicita respuesta a su ticket. / Se verifica que el ticket ya figura como expirado en el sistema, por lo que se procede a reportarlo con el monitor(a) correspondiente para su revisión:", "col": "c-blue" },
@@ -229,29 +243,43 @@
         let activeCardId = null;
         let dragSrcEl = null;
         let isDataLoaded = false;
+        let hasUnsavedChanges = false;
         const colorClasses = ['c-blue', 'c-green', 'c-purple', 'c-orange', 'c-red', 'c-dark', 'c-gray', 'c-teal', 'c-pink', 'c-indigo', 'c-lime', 'c-amber', 'c-brown', 'c-lavender', 'c-purple-dark'];
+
+        // --- MANEJO DEL MODAL ---
+        function openSaveModal() {
+            document.getElementById('saveModal').style.display = 'flex';
+        }
+        function closeSaveModal() {
+            document.getElementById('saveModal').style.display = 'none';
+        }
+        function confirmSave() {
+            closeSaveModal();
+            syncToCloud(true);
+        }
 
         // --- STATUS ---
         function setStatus(state) {
             const led = document.getElementById('statusLed');
             const label = document.getElementById('statusLabel');
-            const cloudBtn = document.getElementById('cloudBtn');
-            const cloudText = document.getElementById('cloudText');
-            led.classList.remove('online', 'offline', 'syncing');
-            cloudBtn.classList.remove('saving');
+            led.className = 'status-led ' + state;
+            
+            if (state === 'online') { label.innerText = 'Sincronizado'; label.style.color = '#2ecc71'; }
+            else if (state === 'syncing') { label.innerText = 'Conectando...'; label.style.color = '#f1c40f'; }
+            else if (state === 'offline') { label.innerText = 'Offline'; label.style.color = '#e74c3c'; }
+            else if (state === 'unsaved') { label.innerText = 'Cambios sin guardar'; label.style.color = '#e67e22'; }
+        }
 
-            if (state === 'online') {
-                led.classList.add('online'); label.innerText = 'En Línea'; label.style.color = '#27ae60'; cloudText.innerText = 'Nube OK';
-            } else if (state === 'syncing') {
-                led.classList.add('syncing'); label.innerText = 'Cargando...'; label.style.color = '#f1c40f'; cloudText.innerText = 'Guardando...'; cloudBtn.classList.add('saving');
-            } else if (state === 'offline') {
-                led.classList.add('offline'); label.innerText = 'Offline'; label.style.color = '#e74c3c'; cloudText.innerText = 'Error';
+        // --- MARCAR COMO NO GUARDADO ---
+        function markUnsaved() {
+            if(!hasUnsavedChanges) {
+                hasUnsavedChanges = true;
+                setStatus('unsaved');
+                document.getElementById('cloudText').innerText = "Guardar";
             }
         }
-        window.addEventListener('online', () => setStatus('online'));
-        window.addEventListener('offline', () => setStatus('offline'));
 
-        // --- CARGA Y GUARDADO ---
+        // --- CARGA ---
         async function loadFromCloud() {
             setStatus('syncing');
             try {
@@ -265,20 +293,15 @@
                     data = result.record;
                 }
 
-                // SI EL BIN ESTÁ VACÍO (NUEVO), USAMOS EL RESPALDO DEL EXCEL
                 if (!data || Object.keys(data).length === 0) {
-                    console.log("Detectado BIN nuevo. Restaurando datos del Excel...");
                     data = defaultData;
-                    // Y guardamos inmediatamente para inicializar la nube
-                    isDataLoaded = true; // Permitir guardado
-                    setTimeout(() => syncToCloud(true), 1000);
+                    isDataLoaded = true;
+                    setTimeout(() => syncToCloud(true), 1000); // Guardado inicial automático solo si está vacío
                 }
 
-                // RENDERIZAR
                 const grid = document.getElementById('grid');
-                grid.innerHTML = ''; // Limpiar
+                grid.innerHTML = ''; 
                 
-                // Asegurar que haya al menos 24 casillas, mezclando datos con vacíos si hace falta
                 const totalCards = Math.max(24, Object.keys(data).length);
                 
                 for(let i=1; i<=totalCards; i++) {
@@ -301,25 +324,23 @@
                 }
 
                 isDataLoaded = true;
+                hasUnsavedChanges = false;
                 setStatus('online');
 
             } catch (err) { 
                 console.error(err);
                 setStatus('offline');
-                // Si falla la conexión inicial, cargar respaldo local visualmente al menos
                 alert("Error de conexión. Se cargarán los datos locales de respaldo.");
-                isDataLoaded = true; // Permitimos trabajar offline
-                // Aquí podrías llamar a una función para renderizar defaultData igual que arriba
+                isDataLoaded = true;
             }
         }
 
+        // --- GUARDADO MANUAL ---
         async function syncToCloud(force = false) {
-            if (!isDataLoaded && !force) return; // Protección contra sobrescritura
+            if (!isDataLoaded && !force) return;
 
-            const cloudIcon = document.querySelector('.cloud-icon');
             setStatus('syncing');
-            cloudIcon.classList.add('spinning');
-
+            
             const data = {};
             document.querySelectorAll('.card').forEach(card => {
                 data[card.id] = {
@@ -335,10 +356,15 @@
                     body: JSON.stringify(data)
                 });
                 if (response.ok) { 
-                    setTimeout(() => { setStatus('online'); cloudIcon.classList.remove('spinning'); }, 500);
+                    setTimeout(() => { 
+                        setStatus('online'); 
+                        hasUnsavedChanges = false;
+                        showToast("✅ Información Guardada");
+                    }, 500);
                 } else throw new Error();
             } catch (err) { 
-                setStatus('offline'); cloudIcon.classList.remove('spinning');
+                setStatus('offline');
+                showToast("❌ Error al guardar");
             }
         }
 
@@ -351,17 +377,16 @@
                 };
             });
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
-            const downloadAnchorNode = document.createElement('a');
-            downloadAnchorNode.setAttribute("href", dataStr);
-            downloadAnchorNode.setAttribute("download", "control_pro_backup.json");
-            document.body.appendChild(downloadAnchorNode);
-            downloadAnchorNode.click();
-            downloadAnchorNode.remove();
+            const node = document.createElement('a');
+            node.setAttribute("href", dataStr);
+            node.setAttribute("download", "control_backup.json");
+            document.body.appendChild(node);
+            node.click();
+            node.remove();
         }
 
         window.onload = loadFromCloud;
 
-        // --- FUNCIONES UI ---
         function handleCardClick(e, card) {
             if(isEditing || e.target.closest('.settings-btn')) return;
             const circle = document.createElement("span");
@@ -387,7 +412,12 @@
             isEditing = !isEditing;
             const btnText = document.getElementById('btnText');
             const editBtn = document.getElementById('editBtn');
-            if(!isEditing) { syncToCloud(); }
+            
+            if(!isEditing) {
+                // Al salir de edición, NO guardamos automáticamente, solo marcamos cambio
+                markUnsaved();
+            }
+
             document.querySelectorAll('.card').forEach(c => {
                 c.classList.toggle('editing', isEditing);
                 c.setAttribute('draggable', !isEditing);
@@ -409,7 +439,9 @@
         function setColor(cls) {
             const card = document.getElementById(activeCardId);
             colorClasses.forEach(c => card.classList.remove(c));
-            card.classList.add(cls); closeColorMenu(); syncToCloud();
+            card.classList.add(cls); 
+            closeColorMenu();
+            markUnsaved(); // Marcamos cambio sin guardar
         }
         function closeColorMenu() { document.getElementById('colorMenu').style.display = 'none'; document.getElementById('overlay').style.display = 'none'; }
         function showToast(msg) { const t = document.getElementById('toast'); t.querySelector('span') ? t.querySelector('span').innerText = msg : t.innerText = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
@@ -417,8 +449,6 @@
         function addDnDHandlers(card) {
             card.addEventListener('dragstart', function(e) { if(isEditing) { e.preventDefault(); return; } dragSrcEl = this; this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
             card.addEventListener('dragover', function(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; return false; });
-            card.addEventListener('dragenter', function() { if(this !== dragSrcEl) this.classList.add('drag-target'); });
-            card.addEventListener('dragleave', function() { this.classList.remove('drag-target'); });
             card.addEventListener('drop', function(e) {
                 e.stopPropagation(); this.classList.remove('drag-target');
                 if (dragSrcEl !== this) {
@@ -433,7 +463,7 @@
                         source.classList.remove(...colorClasses); source.classList.add(colB);
                         target.querySelector('.card-content').innerText = txtA;
                         target.classList.remove(...colorClasses); target.classList.add(colA);
-                        syncToCloud();
+                        markUnsaved(); // Marcamos cambio sin guardar
                     }, 200);
                     setTimeout(() => { source.classList.remove('swapping'); target.classList.remove('swapping'); }, 400);
                 }
